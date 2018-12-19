@@ -1,0 +1,24 @@
+<?php
+/**
+ * @file
+ * Bootstrap sub-theme.
+ *
+ * Place your custom PHP code in this file.
+ */
+function eftec_preprocess_html(&$variables) {
+  if ($node = \Drupal::request()->attributes->get('node')) {
+    $variables['attributes']['class'][] = 'page-node-' . $node->id();
+  }
+  $current_path = \Drupal::service('path.current')->getPath();
+  $variables['current_path'] = \Drupal::service('path.alias_manager')->getAliasByPath($current_path);
+}
+
+
+
+function eftec_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+if (in_array($form_id, ['contact_message_feedback_form', ])) {
+    $key = ($form_id == 'contact_message_feedback_form') ? 'actions' : 'basic';
+    $form[$key]['submit']['#value'] = 'Sign up';
+    $form[$key]['preview']['#access'] = FALSE;
+  }
+}

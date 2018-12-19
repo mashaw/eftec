@@ -1,0 +1,298 @@
+.breadcrumb {
+    font-size: 0.9em;
+    color: #999;
+    padding: 0;
+    margin: 0 0 1em 0;
+    border-top: none;
+    background:#fff;
+    li {
+        a:link,
+        a:visited {
+            color: #999;
+            text-decoration: none!important;
+        }
+        a:hover,
+        a:active {
+            color: #333;
+            text-decoration: underline;
+        }
+    }
+}
+
+
+
+
+.navbar-default .navbar-toggle {
+    border: none;
+    border-radius: 0;
+    margin-right: 10px;
+    padding: 10px 10px 6px 4px;
+    .icon-bar {
+        height: 5px;
+        margin: 5px 0;
+        width:36px;
+        background: $blue;
+        border-radius: 5px;
+    }
+    &:hover ,
+     &:active  {
+        background:transparent!important;
+         cursor:pointer;
+        .icon-bar {
+            background: $darkgrey;
+        }
+    }
+}
+
+
+.nav-label {
+    @include roboto;
+    color: $darkgrey;
+    ;
+    text-transform: uppercase;
+    float: right;
+    margin-right: 0.5em;
+    line-height: 51px;
+}
+
+.navbar-toggle {
+    clear: right
+}
+
+.navbar-toggle {
+    display: block;
+}
+
+.nav-label {
+    display: block;
+}
+
+@media all and (max-width: 960px) {
+    .navbar-btn.logo {
+        width: 150px;
+    }
+}
+
+@media all and (min-width: 768px) {
+    .navbar-toggle {
+        display: none;
+    }
+    .nav-label {
+        display: none
+    }
+}
+
+
+/*/ === Fancy dancing hamburger === /*/
+
+$speed: 200ms;
+$easing: cubic-bezier(0.7, 0, 0, 0.7);
+
+.navbar-toggle {background: transparent;
+    overflow: hidden;
+    .icon-bar {
+        transition: opacity, transform;
+        transition-duration: $speed;
+        transition-timing-function: $easing;
+    }
+    &:not(.collapsed) {
+        .icon-bar {
+            &:nth-child(2) {
+                transform: translateY(10px) rotate(45deg);
+            }
+            &:nth-child(3) {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            &:nth-child(4) {
+                transform: translateY(-10px) rotate(-45deg);
+            }
+        }
+    }
+    &:active {
+        background: transparent;
+    }
+}
+
+
+
+.nav:not(.tabs--primary)>li>a:hover,
+.nav:not(.tabs--primary)>li>a:focus {
+    background: transparent;
+    color: $blue;
+    text-decoration: underline;
+
+}
+
+.nav:not(.tabs--primary)>li.active>a,
+.nav:not(.tabs--primary)>li.active>a:hover,
+.nav:not(.tabs--primary)>li.active>a:focus {
+    background: transparent;
+    @include open-bold;
+    cursor: default;
+}
+
+    @media all and (min-width: 768px) {
+    .region-navigation ul.menu.nav {
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        //text-align: left;
+        li {
+            float: none;
+            display: inline-block;
+        }
+    }
+}
+
+
+    .nav.tabs--primary>li>a {
+
+        padding: 10px 5px 10px 5px;
+    }
+
+// === LEFT HAND MENU === //
+
+
+aside.col-sm-3 {
+    padding-left: 0
+}
+
+aside.col-sm-3 #block-mainnavigation {
+    display: none
+}
+
+@media all and (min-width: 768px) {
+   aside.col-sm-3   #block-mainnavigation {
+        display: block
+    }
+}
+#block-mainnavigation {
+    h2 {
+        font-size: 26px;
+        color: $blue;
+        padding: 10px 10px 10px 20px;
+        margin: 0;
+    }
+    background: #e6e2db;
+    width: 100%;
+    //display: block;
+    float: none;
+    .menu.navbar-nav {
+        border-bottom: 3px solid $blue;
+        float: none;
+        padding: 0!important;
+    }
+    li {
+        display: block;
+        float: none;
+        border-top: 3px solid $blue;
+        a {
+            color: $darkgrey;
+            display: block;
+            padding: 6px 5px 6px 20px;
+            background: #e6e2db;
+            @include open-bold;
+            &:hover {
+                text-decoration: none;
+                background: $stonegrey;
+            }
+            &.is-active {
+                color: $blue;
+                background: #fff;
+                cursor: default;
+                text-decoration: none
+            }}
+           
+        ul {
+            padding: 0!important;
+            li {
+                border-top: 1px solid $stonegrey;
+                a {
+                    @include open-reg;
+                    padding: 5px 5px 5px  40px;
+                    &.is-active {
+                         @include open-bold;
+                        color: $blue;}
+                }
+            }
+            ul {
+                padding: 0!important;
+                li {
+                    a {
+                        @include open-reg;
+                        padding-left: 60px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+@media all and (max-width: 766px) {
+    #navbar-collapse.navbar-collapse .region-navigation-collapsible {
+        margin: 0!important;
+        ul.menu.nav  {
+            li {
+                display: block;
+                float: none;
+                border-top: 3px solid $blue;
+                &:first-child {border-top:none}
+                a {
+                    color: $darkgrey;
+                    display: block;
+                    padding: 6px 5px 6px 20px;
+                    background: #e6e2db;
+                    @include open-bold;
+                    &:hover {
+                        text-decoration: none;
+                        background: $stonegrey;
+                    }
+                    &.is-active {
+                        color: $blue;
+                        background: #fff;
+                        cursor: default;
+                        text-decoration: none
+                    }
+                }
+                ul {
+                    padding: 0!important;
+                    li {
+                        border-top: 1px solid $stonegrey;
+                        &:first-child {border-top: 1px solid $stonegrey}
+                        a {
+                            @include open-reg;
+                            padding: 5px 5px 5px 40px;
+                            &.is-active {
+                                @include open-bold;
+                                color: $blue;
+                            }
+                        }
+                    }
+                    ul {
+                        padding: 0!important;
+                        li {
+                            a {
+                                @include open-reg;
+                                padding-left: 60px;
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+    }
+    
+    .navbar-nav {
+        margin-top: 0;
+        margin-bottom: 0
+    }
+}
+
+
