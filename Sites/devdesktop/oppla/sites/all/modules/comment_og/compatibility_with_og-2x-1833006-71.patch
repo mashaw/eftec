@@ -1,0 +1,202 @@
+diff --git a/comment_og.module b/comment_og.module
+index 1ffea72..5b0e088 100644
+--- a/comment_og.module
++++ b/comment_og.module
+@@ -75,19 +75,22 @@ function comment_og_og_permission() {
+ function comment_og_node_view_alter(&$build) {
+   // Remove comment link and form for non-members.
+   $node = $build['#node'];
+-  $group = og_context();
+-
+-  if ($group) {
+-    if (!empty($group->gid)) {
+-      // Using og_user_access directly since comment_og_access takes in a
+-      // comment object or cid.
+-      if (!og_user_access($group->gid, "post comment_node_" . $node->type)) {
+-        unset($build['links']['comment']['#links']['comment-add']);
+-        $build['links']['comment']['#links']['comment_forbidden'] = array(
+-          'title' => theme('comment_post_forbidden', array('node' => $node)),
+-          'html' => TRUE,
+-        );
+-        $build['comments']['comment_form'] = array();
++  if (isset($node->nid)) {
++    $group_type = 'node';
++    $groups = og_get_entity_groups('node', $node->nid);
++    if (isset($groups[$group_type])){
++      foreach ($groups[$group_type] as $key => $group) {
++        // Using og_user_access directly since comment_og_access takes in a
++        // comment object or cid.
++        if (!og_user_access($group_type, $group, "post comment_node_" . $node->type)) {
++          unset($build['links']['comment']['#links']['comment-add']);
++          $build['links']['comment']['#links']['comment_forbidden'] = array(
++            'title' => theme('comment_post_forbidden', array('node' => $node)),
++            'html' => TRUE,
++          );
++          $build['comments']['comment_form'] = array();
++          break;  //user is part of one of the groups, so don't check the remaining groups.
++        }
+       }
+     }
+   }
+@@ -99,39 +102,40 @@ function comment_og_node_view_alter(&$build) {
+ function comment_og_comment_view_alter(&$build) {
+   $links = array();
+   $node = $build['#node'];
+-  $group = og_context();
+   $comment = $build['#comment'];
+ 
+-  // Build the links array in group context (largely lifted from comment_link).
+-  if (isset($group->gid) && $node->comment == COMMENT_NODE_OPEN) {
+-    if (comment_og_access('delete', $comment, $group->gid)) {
++  // Build the links array (largely lifted from comment_link).
++  if ($node->comment == COMMENT_NODE_OPEN) {
++    if (comment_og_access('delete', $comment)) {
+       $links['comment-delete'] = array(
+         'title' => t('delete'),
+-        'href' => "comment/$comment->cid/delete/$group->gid",
++        'href' => "comment/$comment->cid/delete",
+         'html' => TRUE,
+       );
+     }
+-    if (comment_og_access('edit', $comment, $group->gid)) {
++    if (comment_og_access('edit', $comment) && user_access('post comments') ) {
+       $links['comment-edit'] = array(
+         'title' => t('edit'),
+-        'href' => "comment/$comment->cid/edit/$group->gid",
++        'href' => "comment/$comment->cid/edit",
+         'html' => TRUE,
+       );
+     }
+-    if (comment_og_access('post', $comment, $group->gid)) {
+-      $links['comment-reply'] = array(
+-        'title' => t('reply'),
+-        'href' => "comment/reply/$comment->nid/$comment->cid/$group->gid",
+-        'html' => TRUE,
+-      );
++    if (comment_og_access('post', $comment) && user_access('post comments') ) {
++      if ($comment->status == COMMENT_PUBLISHED) {
++        $links['comment-reply'] = array(
++          'title' => t('reply'),
++          'href' => "comment/reply/$comment->nid/$comment->cid",
++          'html' => TRUE,
++        );
++      }
+     }
+-    if (comment_og_access('approve', $comment, $group->gid)) {
++    if (comment_og_access('approve', $comment)) {
+       if ($comment->status == COMMENT_NOT_PUBLISHED) {
+         $links['comment-approve'] = array(
+           'title' => t('approve'),
+-          'href' => "comment/$comment->cid/approve/$group->gid",
++          'href' => "comment/$comment->cid/approve",
+           'html' => TRUE,
+-          'query' => array('token' => drupal_get_token("comment/$comment->cid/approve/$group->gid")),
++          'query' => array('token' => drupal_get_token("comment/$comment->cid/approve")),
+         );
+       }
+     }
+@@ -154,7 +158,7 @@ function comment_og_menu_alter(&$items) {
+     'page callback' => 'comment_edit_page',
+     'page arguments' => array(1),
+     'access callback' => 'comment_og_access',
+-    'access arguments' => array('edit', 1, 3),
++    'access arguments' => array('edit', 1),
+     'type' => MENU_LOCAL_TASK,
+     'weight' => 0,
+   );
+@@ -163,7 +167,7 @@ function comment_og_menu_alter(&$items) {
+     'page callback' => 'comment_approve',
+     'page arguments' => array(1),
+     'access callback' => 'comment_og_access',
+-    'access arguments' => array('approve', 1, 3),
++    'access arguments' => array('approve', 1),
+     'file' => 'comment.pages.inc',
+     'file path' => drupal_get_path('module', 'comment'),
+     'weight' => 1,
+@@ -173,12 +177,21 @@ function comment_og_menu_alter(&$items) {
+     'page callback' => 'comment_confirm_delete_page',
+     'page arguments' => array(1),
+     'access callback' => 'comment_og_access',
+-    'access arguments' => array('delete', 1, 3),
++    'access arguments' => array('delete', 1),
+     'type' => MENU_LOCAL_TASK,
+     'file' => 'comment.admin.inc',
+     'file path' => drupal_get_path('module', 'comment'),
+     'weight' => 2,
+   );
++  $items['comment/reply/%node'] = array(
++    'title' => 'Add new comment',
++    'page callback' => 'comment_reply',
++    'page arguments' => array(2),
++    'access callback' => 'comment_og_access',
++    'access arguments' => array('post', 3 , 2),
++    'file' => 'comment.pages.inc',
++    'file path' => drupal_get_path('module', 'comment'),
++  );
+ }
+ 
+ /**
+@@ -189,18 +202,17 @@ function comment_og_menu_alter(&$items) {
+  * based on the replies to their posts.
+  *
+  * @param string $op
+- *   The operation that is to be performed on the comment. Only 'edit' is
+- *   recognized now.
++ *   The operation that is to be performed on the comment.
+  * @param object $comment
+  *   The comment object. A CID is also allowed.
+- * @param int $gid
+- *   A group ID, loaded from og_context() which cannot be called natively within
+- *   this function because it causes a white screen (WSOD).
++ * @param object $node
++ *   The node object, loaded from comment_og_menu_alter() when posting new comments
++ *   using a direct link comment/reply/%node
+  *
+  * @return bool
+  *   TRUE if the current user has acces to the comment, FALSE otherwise.
+  */
+-function comment_og_access($op, $comment, $gid = FALSE) {
++function comment_og_access($op, $comment = FALSE, $node = FALSE) {
+   global $user;
+ 
+   // Load comment object if not passed in.
+@@ -208,19 +220,27 @@ function comment_og_access($op, $comment, $gid = FALSE) {
+     $comment = comment_load($comment);
+   }
+ 
+-  // Group context logic.
+-  if ($comment && $gid) {
+-    switch ($op) {
+-      case 'approve':
+-        return og_user_access($gid, 'approve ' . $comment->node_type) || user_access('administer comments');
+-      case 'delete':
+-        return og_user_access($gid, 'delete ' . $comment->node_type) || user_access('administer comments');
+-      case 'edit':
+-        $own = ($user->uid && $user->uid == $comment->uid) ? 'own ' : '';
+-        return og_user_access($gid, 'edit ' . $own . $comment->node_type) || user_access('administer comments');
+-      case 'post':
+-        return og_user_access($gid, 'post ' . $comment->node_type);
++  //Get the groups ids and node types.
++  $group_type = 'node';
++  if (isset($node->nid)) {
++    $groups = og_get_entity_groups('node', $node->nid);
++    $node_type = 'comment_node_'.$node->type;
++  }elseif (isset($comment->nid)) {
++    $groups = og_get_entity_groups('node', $comment->nid);
++    $node_type = $comment->node_type;
++  }
++
++  // Group logic.
++  if(isset($groups[$group_type])) {
++    $own = '';
++    if ($op == 'edit') $own = ($user->uid && $user->uid == $comment->uid) ? 'own ' : '';
++    foreach ($groups[$group_type] as $key => $group) {
++      $access = (int)(og_user_access($group_type, $group, $op.' '.$own.$node_type) || user_access('administer comments'));
++      if ($access == 1) {
++        return TRUE; //user has access by one group, so don't check the remaining groups.
++      }
+     }
++    return FALSE;
+   }
+   // Non-Group context logic.
+   else {

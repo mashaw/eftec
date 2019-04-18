@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the escom_resources_1 feature.
+ */
+
+include_once 'escom_resources_1.features.inc';

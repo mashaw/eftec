@@ -1,0 +1,47 @@
+#
+#  Nameserver records.
+#
+.connectingnature.eu::a.ns.bytemark.co.uk:300
+.connectingnature.eu::b.ns.bytemark.co.uk:300
+.connectingnature.eu::c.ns.bytemark.co.uk:300
+
+#
+#  The domain name itself
+#
+=connectingnature.eu:5.28.62.219:300
+
+#
+#  Useful aliases.
+#
++ftp.connectingnature.eu:5.28.62.219:300
++www.connectingnature.eu:5.28.62.219:300
++mail.connectingnature.eu:5.28.62.219:300
+
+#
+# A record for MX
+#
++mx.connectingnature.eu:5.28.62.219:300
+
+#
+#  The domain name itself -- AAAA record and reverse.
+#
+6connectingnature.eu:200141c90001041c0000000000000219:300
+
+#
+#  Useful aliases -- AAAA records only
+#
+3ftp.connectingnature.eu:200141c90001041c0000000000000219:300
+3www.connectingnature.eu:200141c90001041c0000000000000219:300
+3mail.connectingnature.eu:200141c90001041c0000000000000219:300
+
+#
+# AAAA record for MX
+#
+3mx.connectingnature.eu:200141c90001041c0000000000000219:300
+
+#
+# MX record -- no IP defined, as this is done separately above.
+#
+@connectingnature.eu::mx.connectingnature.eu:15:300
+
+# Checksum MD5 e8a001808e07625cfafe317bb4c3cafe

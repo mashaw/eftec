@@ -1,0 +1,12 @@
+diff --git a/imagefield_crop.module b/imagefield_crop.module
+index bc574af..7962193 100644
+--- a/imagefield_crop.module
++++ b/imagefield_crop.module
+@@ -327,6 +327,7 @@ function imagefield_crop_widget_value(&$element, &$input, $form_state) {
+     // get crop and scale info
+     $crop = $input['cropinfo'];
+     $instance = field_widget_instance($element, $form_state);
++    $scale = NULL;
+     if ($instance['widget']['settings']['resolution']) {
+       list($scale['width'], $scale['height']) = explode('x', $instance['widget']['settings']['resolution']);
+     }

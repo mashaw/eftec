@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the disable_menu_blocks module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function disable_menu_blocks_uninstall() {
+  variable_del('enable_disable_menu_blocks');
+  variable_del('disable_og_menu_blocks');
+}

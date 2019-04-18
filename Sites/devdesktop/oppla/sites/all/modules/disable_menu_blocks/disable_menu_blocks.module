@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function disable_menu_blocks_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'block_info' && variable_get('enable_disable_menu_blocks', FALSE)) {
+    unset($implementations['menu']);
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function disable_menu_blocks_block_info() {
+  $blocks = array();
+
+  if (!variable_get('enable_disable_menu_blocks', FALSE)) {
+    $menus = menu_get_menus(FALSE);
+
+    $blocks = array();
+    foreach ($menus as $name => $title) {
+      $blocks[$name]['info'] = check_plain($title);
+      // Menu blocks can't be cached because each menu item can have
+      // a custom access callback. menu.inc manages its own caching.
+      $blocks[$name]['cache'] = DRUPAL_NO_CACHE;
+    }
+  }
+  elseif (module_exists('og_menu') && variable_get('disable_og_menu_blocks', FALSE)) {
+    $menus = disable_menu_blocks_menu_get_menus(FALSE);
+
+    $blocks = array();
+    foreach ($menus as $name => $title) {
+      $blocks[$name]['info'] = check_plain($title);
+      // Menu blocks can't be cached because each menu item can have
+      // a custom access callback. menu.inc manages its own caching.
+      $blocks[$name]['cache'] = DRUPAL_NO_CACHE;
+    }
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Alters the menu settings form.
+ *
+ * @see menu_configure_form()
+ */
+function disable_menu_blocks_form_menu_configure_alter(&$form, $form_state) {
+  if (!user_access('administer disable menu blocks')) {
+    return;
+  }
+
+  $form['disable_menu_blocks'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Disable menu blocks'),
+  );
+
+  $form['disable_menu_blocks']['enable_disable_menu_blocks'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable disable menu blocks'),
+    '#description' => t('When enabled, Disable Menu Blocks module disables the hook_block_info implementation of menu.module.'),
+    '#default_value' => variable_get('enable_disable_menu_blocks', FALSE),
+  );
+
+  if (module_exists('og_menu')) {
+    $form['disable_menu_blocks']['disable_og_menu_blocks'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Only disable menus blocks of menus defined by OG Menu'),
+      '#description' => t('When enabled, OG Menus will not have an individual block definition.'),
+      '#default_value' => variable_get('disable_og_menu_blocks', FALSE),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="enable_disable_menu_blocks"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+}
+
+/**
+ * Custom version of menu_get_menus() that calls disable_menu_blocks_menu_load_all().
+ *
+ * @see menu_get_menus().
+ */
+function disable_menu_blocks_menu_get_menus() {
+  if ($custom_menus = disable_menu_blocks_menu_load_all()) {
+    if (!$all) {
+      $custom_menus = array_diff_key($custom_menus, menu_list_system_menus());
+    }
+    foreach ($custom_menus as $menu_name => $menu) {
+      $custom_menus[$menu_name] = t($menu['title']);
+    }
+    asort($custom_menus);
+  }
+  return $custom_menus;
+}
+
+/**
+ * Custom version of menu_load_all() that
+ *
+ * @see menu_load_all().
+ */
+function disable_menu_blocks_menu_load_all() {
+  $custom_menus = &drupal_static(__FUNCTION__);
+  if (!isset($custom_menus)) {
+    if ($cached = cache_get('disable_menu_menu_custom', 'cache_menu')) {
+      $custom_menus = $cached->data;
+    }
+    else {
+      $query = db_query('SELECT * FROM {menu_custom} WHERE menu_name NOT IN (SELECT menu_name FROM {og_menu})');
+      $custom_menus = $query->fetchAllAssoc('menu_name', PDO::FETCH_ASSOC);
+      cache_set('disable_menu_menu_custom', $custom_menus, 'cache_menu');
+    }
+  }
+  return $custom_menus;
+}

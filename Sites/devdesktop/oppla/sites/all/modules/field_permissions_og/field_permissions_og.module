@@ -1,0 +1,165 @@
+<?php
+
+define('FIELD_PERMISSIONS_OG', 90);
+
+/**
+ * Implements hook_form_alter().
+ */
+function field_permissions_og_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+
+  // Verify the field_permissions module has already added its form elements.
+  if(isset($form['field']['field_permissions'])) {
+    $fld_perm = &$form['field']['field_permissions'];
+
+    $fld_perm['type']['#options'][FIELD_PERMISSIONS_OG] = t("Organic Groups");
+    // Leverage OG's Views integration to generate the OG permissions options.
+    field_permissions_og_build_settings_form($fld_perm, $form_state);
+
+    // Set a default value if applicable.
+    $fld_perm['og_perms']['#default_value'] = isset($form['#field']['field_permissions']['og_perms'])
+      ? $form['#field']['field_permissions']['og_perms']
+      : '';
+    $fld_perm['og_perms']['#required'] = false;
+    $fld_perm['og_perms']['#element_validate'] = array('field_permissions_og_is_required');
+
+    // Conditionally hide the options if the related radio button is not selected.
+    $fld_perm['og_perms']['#states'] = array(
+      'visible' => array(
+        ':input[name="field[field_permissions][type]"]' => array('value' => (string) FIELD_PERMISSIONS_OG),
+      ),
+      'required' => array(
+        ':input[name="field[field_permissions][type]"]' => array('value' => (string) FIELD_PERMISSIONS_OG),
+      ),
+    );
+  }
+}
+
+/**
+ * Attaches the OG permission options form element to the target "$attach_to_element".
+ *
+ * @param array $attach_to_element The root form element to attach our OG perm options element to.
+ * @param array $form_state
+ */
+function field_permissions_og_build_settings_form(&$attach_to_element, $form_state, $default_value = "") {
+
+  module_load_include('inc', 'og', 'plugins/access/og_perm');
+  $form_stub = array();
+  $conf = array('perm' => $default_value);
+  // Load up the permission options using OG's views permissions integration.
+  $form_stub = og_perm_ctools_access_settings($form_stub, $form_state, $conf);
+  $form_stub['settings']['perm']['#description'] .=
+    '<p>' . t('In most cases, when creating a new entity, there is not yet a relationship established to a Organic Group. <br />
+This will cause the permission check to always assume the user cannot access the field. <br >
+Organic Group\'s Contexts can potentially help with this.') . '</p>';
+
+  $attach_to_element['og_perms'] = $form_stub['settings']['perm'];
+  $attach_to_element['og_perms']['#multiple'] = true;
+}
+
+
+/**
+ * Implements hook_field_access().
+ */
+function field_permissions_og_field_access($op, $field, $entity_type, $entity, $account) {
+  // Is the permission type on the field ours?
+  if(isset($field['field_permissions']['type']) && $field['field_permissions']['type'] == FIELD_PERMISSIONS_OG) {
+    // Were there any permissions specified?
+    if(is_array($field['field_permissions']['og_perms'])) {
+      return field_permissions_og_check_access($field['field_permissions']['og_perms']);
+    }
+  }
+}
+
+/**
+ * Determine if the $account has access to the required Organic Group Membership permissions.
+ * Uses OG Context to retrieve the reagent group.
+ *
+ * @param array $required_perms An array of strings consisting of permissions.
+ * @param object|null $account The account to evaluate against. Will use the currently logged in user if null.
+ * @return bool
+ */
+function field_permissions_og_check_access($required_perms, $account = null) {
+  $og_context = og_context();
+  if(empty($og_context)) {
+    // We have og_perms that are expected to be evaluated, but,
+    // no OG Context was found for the user. Instantly fail the access check.
+    return false;
+  }
+  // Loop over permissions and check expected perm against the group from $og_context.
+  // All access checks must pass, not just one.
+  foreach($required_perms as $perm) {
+    if(!og_user_access($og_context['group_type'], $og_context['gid'], $perm, $account)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Implements hook_field_group_format_settings().
+ */
+function field_permissions_og_field_group_format_settings($group) {
+  if(!field_permissions_og_field_group_is_supported($group->format_type)) {
+    return;
+  }
+  // Here we integrate with the field_group module's settings forms, if applicable.
+  $html_id = "og-perm-" . drupal_clean_css_identifier($group->group_name);
+  $default_value = !empty($group->format_settings['og_perm']) ? "1" : "0";
+  $form = array(
+    'og_perm' => array(
+      '#type' => 'radios',
+      '#title' => t('Require Organic Group permission?'),
+      '#options' => array(
+        1 => t('Yes'),
+        0 => t('No')),
+      '#prefix' => "<div id=\"$html_id\">",
+      '#default_value' => "$default_value",
+      '#suffix' => '</div>',
+      '#weight' => 98,
+    ),
+  );
+  $perms_default_value = empty($group->format_settings['og_perms'])
+    ? ""
+    : array_keys($group->format_settings['og_perms']);
+  $form_state = array();
+  field_permissions_og_build_settings_form($form, $form_state, $perms_default_value);
+  $form['og_perms']['#weight'] = 99;
+  $form['og_perms']['#states'] = array(
+    'visible' => array(
+      "#$html_id [type=\"radio\"]" => array('value' => "1"),
+    ),
+    'required' => array(
+    "#$html_id [type=\"radio\"]" => array('value' => "1"),
+  )
+  );
+  return $form;
+}
+
+function field_permissions_og_is_required($element, &$form_state, $form) {
+  if (empty($element['#value']) && $form_state['values']['field']['field_permissions']['type'] == FIELD_PERMISSIONS_OG) {
+    form_error($element, t('%title is a required field.', array('%title' => $element['#title'])));
+  }
+}
+
+function field_permissions_og_field_group_is_supported($group_format) {
+  // Only run on support group types.
+  $supported_types = array('fieldset', 'div', 'html-element', 'html5');
+
+  return in_array($group_format, $supported_types);
+}
+
+/**
+ * Implements hook_field_group_pre_render_alter().
+ */
+function field_permissions_og_field_group_pre_render_alter(&$element, $group, & $form) {
+  // Here we integrate with the field_group module's render process, is applicable.
+
+  // Lets attempt to run the "#access" of this group through a OG Membership permission check.
+  if(!field_permissions_og_field_group_is_supported($group->format_type)) {
+    return;
+  }
+  if(!empty($group->format_settings['og_perm']) && !empty($group->format_settings['og_perms'])) {
+    $element['#access'] = field_permissions_og_check_access($group->format_settings['og_perms']);
+  }
+}

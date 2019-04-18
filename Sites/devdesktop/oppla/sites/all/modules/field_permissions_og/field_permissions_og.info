@@ -1,0 +1,13 @@
+name="Field Permissions OG"
+description="Adds Organic Group, membership level permissions to Field Permissions."
+core=7.x
+
+dependencies[]=og (>= 2.9)
+dependencies[]=field_permissions (1.x)
+
+; Information added by Drupal.org packaging script on 2017-11-14
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "field_permissions_og"
+datestamp = "1510669988"
+

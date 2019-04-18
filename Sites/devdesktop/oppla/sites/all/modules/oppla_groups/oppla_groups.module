@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the oppla_groups feature.
+ */
+
+include_once 'oppla_groups.features.inc';

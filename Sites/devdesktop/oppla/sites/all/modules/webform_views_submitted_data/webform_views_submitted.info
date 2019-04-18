@@ -1,0 +1,8 @@
+name = Webform Views Submitted Data
+description = Display webform submitted data into views.
+core = 7.x
+package = Webform
+dependencies[] = webform
+
+files[] = webform_views_submitted_handler_field.inc
+files[] = webform_views_submitted_handler_filter_many_to_one.inc

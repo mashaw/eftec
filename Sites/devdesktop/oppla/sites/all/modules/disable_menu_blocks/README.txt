@@ -1,0 +1,1 @@
+Configure on admin/structure/menu/settings

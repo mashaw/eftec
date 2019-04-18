@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the  NBS Case Study - City Overview feature.
+ */
+
+include_once '_nbs_case_study_city_overview.features.inc';

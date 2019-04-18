@@ -1,0 +1,37 @@
+diff --git a/imagefield_crop.module b/imagefield_crop.module
+index 45c4a0f..68b0d4e 100644
+--- a/imagefield_crop.module
++++ b/imagefield_crop.module
+@@ -166,7 +166,7 @@ function _imagefield_crop_widget_resolution_validate($element, &$form_state) {
+ 
+ function _imagefield_crop_widget_enforce_ratio_validate($element, &$form_state) {
+   $settings = $form_state['values']['instance']['widget']['settings'];
+-  if ($settings['resolution'] && !$element['#value']) {
++  if (!empty($settings['resolution']) && empty($element['#value'])) {
+     drupal_set_message(t('Output resolution is defined, but not enforced. Final images might be distroted'));
+   }
+ }
+@@ -266,8 +266,9 @@ function imagefield_crop_widget_process($element, &$form_state, $form) {
+     $file_to_crop = _imagefield_crop_file_to_crop($element['#file']->fid);
+ 
+     $element['cropinfo'] = _imagefield_add_cropinfo_fields($element['#file']->fid);
+-    list($res_w, $res_h) = explode('x', $widget_settings['resolution']);
+-    list($crop_w, $crop_h) = explode('x', $widget_settings['croparea']);
++    list($res_w, $res_h) = !empty($widget_settings['resolution']) ? explode('x', $widget_settings['resolution']) : array(0, 0);
++    list($crop_w, $crop_h) = !empty($widget_settings['croparea'])? explode('x', $widget_settings['croparea']) : array(0, 0);
+ 
+     $element['preview'] = array(
+       '#type' => 'markup',
+@@ -351,9 +352,9 @@ function imagefield_crop_widget_preview_process($element, &$form_state, $form) {
+   $parents = array_slice($element['#array_parents'], 0, -1);
+   $parent = drupal_array_get_nested_value($form, $parents);
+   $instance = field_widget_instance($parent, $form_state);
+-  if ($instance['widget']['settings']['resolution']) {
+-    list($width, $height) = explode('x', $instance['widget']['settings']['resolution']);
+-  }
++  list($width, $height) = !empty($instance['widget']['settings']['resolution'])
++    ? explode('x', $instance['widget']['settings']['resolution'])
++    : array(0, 0);
+ 
+   $image_info = image_get_info(drupal_realpath($file->uri));
+   $settings = array(

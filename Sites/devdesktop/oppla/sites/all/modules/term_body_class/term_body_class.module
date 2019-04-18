@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ * Adds a class to the content body tag with the terms the node is tagged with.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function term_body_class_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'field_ui_field_edit_form') {
+    if (isset($form['#field']['type']) && $form['#field']['type'] == 'taxonomy_term_reference') {
+      $form['instance']['as_body_class'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Add as body class'),
+        '#default_value' => isset($form['#instance']['as_body_class']) ? $form['#instance']['as_body_class'] : FALSE,
+        '#description' => t('On enabling this, the value(s) of this field, if present, will be added as class(es) to the body.'),
+        '#weight' => -10,
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function term_body_class_preprocess_html(&$variables) {
+  if (!path_is_admin(current_path())) {
+    $field_class_arr = array();
+
+    // If node page, get the terms for the node.
+    $node = menu_get_object('node');
+    if (is_object($node) && isset($node->nid)) {
+      $field_class_arr = term_body_class_get_classes('node', $node, $node->type);
+    }
+    // If user page, get the terms for the user.
+    $user = menu_get_object('user');
+    if (is_object($user) && isset($user->uid)) {
+      $field_class_arr = term_body_class_get_classes('user', $user, 'user');
+    }
+
+    // Add the classes to the body.
+    if (!empty($field_class_arr)) {
+      $variables['classes_array'] = array_merge($variables['classes_array'], $field_class_arr);
+    }
+  }
+}
+
+/**
+ * Returns an array of terms of an entity in their machine name version.
+ *
+ * @param string $type
+ *   The entity type.
+ * @param object $entity
+ *   The entity object.
+ * @param string $bundle
+ *   The bundle of the entity.
+ *
+ * @return array
+ *   An array containing machine name versions of terms from the passed entity.
+ */
+function term_body_class_get_classes($type, $entity, $bundle) {
+  // Get the fields.
+  $content_type_fields = field_info_instances($type, $bundle);
+  $field_class_arr = array();
+  foreach ($content_type_fields as $field) {
+    // For each field check if add body class is enabled.
+    if (isset($field['as_body_class']) && $field['as_body_class']) {
+      // Get all the field values.
+      $field_name = $field['field_name'];
+      $field_values = field_get_items($type, $entity, $field_name);
+      if (!empty($field_values)) {
+        // Create an array of all the terms in the machine name version.
+        foreach ($field_values as $term) {
+          // For each term get the machine readable name.
+          $machine_readable = strtolower($term['taxonomy_term']->name);
+          $field_class_arr[] = drupal_html_class('tbc-' . $machine_readable);
+        }
+      }
+    }
+  }
+  return $field_class_arr;
+}

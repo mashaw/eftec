@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function field_permissions_og_install() {
+  // We need to set this module's weight to one higher than field_permissions.
+  $weight = db_select('system', 's')
+    ->fields('s', array('weight'))
+    ->condition('name', 'field_permissions')
+    ->execute()
+    ->fetchField();
+
+  $weight = empty($weight)
+    ? 0
+    : $weight;
+
+  // Set our module's weight to +1 of the field_permissions module.
+  db_update('system')
+    ->fields(array(
+      'weight' => ($weight+1)))
+    ->condition('name', 'field_permissions_og')
+    ->execute();
+}
